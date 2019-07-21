@@ -1,0 +1,247 @@
+﻿
+@{
+    ViewBag.Title = "Paged Products Client Side";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Paged Products</h2>
+
+<div class="container-fluid">
+    <div class="paging row">
+        <span class="col-lg-12 page-span"></span>
+    </div>
+	<div class="row" style="font-weight:bolder;background-color:skyblue; font-size:medium;">
+		<div class="col-lg-1" style="color:white !important;padding:5px;">ProductId</div>
+		<div class="col-lg-3" style="color:white !important;padding:5px;">Product Name</div>
+		<div class="col-lg-6" style="color:white !important;padding:5px;">Description</div>
+		<div class="col-lg-2" style="color:white !important;padding:5px;">Price</div>
+	</div>
+    <section id="productDetails" class="row" style="background-color:snow-white; border: thin gray solid; border-radius:5px; color:gray; font-size:medium;">
+
+    </section>
+    <div class="paging row">
+        <span class="col-lg-12 page-span"></span>
+    </div>
+</div>
+<script type="text/javascript">
+
+    var PagingManager = {
+		pagingForward:true,
+        requestUrl: null,
+        products: [],
+        currentPage: 1,
+        productsPerPage: 2,
+        pagesToShow: 3,
+        numberOfPages: function() {
+            return PagingManager.products.length % PagingManager.productsPerPage == 0 ? PagingManager.products.length / PagingManager.productsPerPage : parseInt(PagingManager.products.length / PagingManager.productsPerPage + 1);
+        },
+        viewStartPage: 1,
+        viewEndPage: 0,
+        previousViewStartPage: 1,
+        setRequestUrl: function(url) {
+            PagingManager.requestUrl = url;
+        },
+        loadRequestPayLoad: function (data, direction) {
+            if (data) {
+                let tmpProducts = PagingManager.products;
+                this.products = data;
+                if (this.products.length > 0) {  
+                    PagingManager.drawPageNumber(PagingManager.currentPage);
+                    PagingManager.drawPager();
+                    PagingManager.toggleEnableBackward();
+                    PagingManager.toggleEnableForward();
+                }
+                else {
+                    PagingManager.toggleEnableBackward();
+                    PagingManager.toggleEnableForward();
+                    PagingManager.products = tmpProducts;
+                    if (direction === "forward") {
+                        PagingManager.viewEndPage = PagingManager.viewStartPage - 1;
+                        PagingManager.viewStartPage = PagingManager.viewEndPage - PagingManager.numberOfPages() + 1;
+                        PagingManager.currentPage = PagingManager.viewEndPage;
+                    }
+                }
+				
+				
+				if(PagingManager.pagingForward){
+					$('a.firstPagedAnchor').css('color','orange');
+					$('a.firstPagedAnchor').css('font-weight','bold');
+				}
+				if(!PagingManager.pagingForward){
+					$('a.lastPagedAnchor').css('color','orange');
+					$('a.lastPagedAnchor').css('font-weight','bold');
+				}
+            }
+        },
+        getProducts: function(direction) {
+            $.ajax({
+                url: PagingManager.requestUrl,
+                method: 'POST',
+                data: JSON.stringify({ queryParams: { direction: direction, viewStartPage: PagingManager.viewStartPage, numberPerPage: PagingManager.productsPerPage, pagesToShow: PagingManager.pagesToShow } }),
+                contentType: 'application/json',
+                dataType: 'json',
+                success: function(data) {
+                    PagingManager.loadRequestPayLoad(data,direction);
+                },
+                error: function(xHReq, error, method) {
+                }
+            });
+        },
+        drawPageNumber: function(pageNumber) {
+            this.clearPage();
+
+            for (let startIndex = PagingManager.convertAndMapPageNumberToModel(pageNumber) * PagingManager.productsPerPage - PagingManager.productsPerPage; startIndex < PagingManager.productsPerPage * PagingManager.convertAndMapPageNumberToModel(pageNumber) && startIndex < this.products.length; startIndex++) {
+                let row = document.createElement('div');
+                $(row).attr('class', 'row');
+               
+                let prodIdDiv = document.createElement('div');
+                $(prodIdDiv).attr('class', 'col-lg-1');
+                $(prodIdDiv).html(PagingManager.products[startIndex].prodId);
+                $(row).append(prodIdDiv);
+
+                
+                let prodIdDivName = document.createElement('div');
+                $(prodIdDivName).attr('class', 'col-lg-3');
+                $(prodIdDivName).html(PagingManager.products[startIndex].prodName);
+                $(row).append(prodIdDivName);
+                
+                let prodIdDivDescription = document.createElement('div');
+                $(prodIdDivDescription).attr('class', 'col-lg-6');
+                $(prodIdDivDescription).html(PagingManager.decodeHtml(PagingManager.products[startIndex].prodDesc));
+                $(row).append(prodIdDivDescription);
+                
+                let prodIdDivPrice = document.createElement('div');
+                $(prodIdDivPrice).attr('class', 'col-lg-2');
+                $(prodIdDivPrice).html(PagingManager.products[startIndex].prodPrice);
+                $(row).append(prodIdDivPrice);
+
+                $('section#productDetails').append(row);
+				
+				let hr = document.createElement('hr');
+				$(hr).css('width','100%');
+                $('section#productDetails').append(hr);
+				
+            }
+        },
+        drawPager: function() {
+            this.clearPager();
+
+            let backwardFetch = document.createElement('a');
+            backwardFetch.text = '<<';
+            $(backwardFetch).attr('class', 'backwardFetch');
+            $(backwardFetch).click(function () {
+				PagingManager.pagingForward = false;
+                PagingManager.moveBackNextResultSet();
+            });
+            $('span.page-span').append(backwardFetch);
+
+            if (PagingManager.products.length > 0) {
+                for (let n = PagingManager.viewStartPage, pages = 1; PagingManager.products.length % PagingManager.productsPerPage == 0 ? pages <= PagingManager.products.length / PagingManager.productsPerPage : pages <= PagingManager.products.length / PagingManager.productsPerPage + 1; n++ , pages++) {
+                    let a = document.createElement('a');
+                    a.text = n;
+					$('span.page-span > a').css('color','teal');
+					$('span.page-span > a').css('font-weight','normal');
+					if(n == PagingManager.viewStartPage){
+						$(a).attr('class','firstPagedAnchor');
+					}					
+					if(PagingManager.products.length % PagingManager.productsPerPage == 0 ? pages == PagingManager.products.length / PagingManager.productsPerPage : pages == PagingManager.products.length / PagingManager.productsPerPage + 1){
+						$(a).attr('class','lastPagedAnchor');
+					}
+                    $(a).click(function () {
+                        let pageNumber = $(this).text().trim();
+                        PagingManager.currentPage = pageNumber;
+                        PagingManager.drawPageNumber(pageNumber);
+						$('span.page-span > a').css('color','teal');
+						$('span.page-span > a').css('font-weight','normal');
+									
+						$('span.page-span > a:contains("'+pageNumber+'")').css('color','orange');
+						$('span.page-span > a:contains("'+pageNumber+'")').css('font-weight','bold');
+                    });
+                    $('span.page-span').append('|');
+                    $('span.page-span').append(a);
+                    $('span.page-span').append('|');
+                }
+            }
+            let forwardFetch = document.createElement('a');
+            forwardFetch.text = '>>';
+            $(forwardFetch).attr('class', 'forwardFetch');
+            $(forwardFetch).click(function() {
+				PagingManager.pagingForward = true;
+                PagingManager.moveToNextResultSet();
+            });
+            $('span.page-span').append(forwardFetch);
+
+        },
+        convertAndMapPageNumberToModel: function (pageNumber) {
+            var startPage = PagingManager.viewStartPage;
+            var startPageCorrespond = 1;
+
+            var dif = pageNumber - startPage;
+            return startPageCorrespond + dif;
+        },
+        moveToNextResultSet: function () {
+            PagingManager.viewStartPage = PagingManager.viewStartPage + PagingManager.numberOfPages();
+            PagingManager.viewEndPage = PagingManager.viewStartPage + PagingManager.numberOfPages() - 1;
+            PagingManager.currentPage = PagingManager.viewStartPage;
+            PagingManager.getProducts('forward');			
+        },
+        moveBackNextResultSet: function () {
+            PagingManager.viewEndPage = PagingManager.viewStartPage - 1;
+            PagingManager.viewStartPage = PagingManager.viewEndPage - PagingManager.numberOfPages() + 1;
+            PagingManager.currentPage = PagingManager.viewEndPage;
+            PagingManager.getProducts('backward');
+        },
+        initialize: function () {
+            PagingManager.getProducts('forward');
+        },
+        clearPager:function() {
+            $('span.page-span').empty();
+        },
+        clearPage: function () {
+            $('section#productDetails').empty();
+        },
+        numericalPagerValuesClicked: function() {
+            let pageNumber = $(this).text().trim();
+            PagingManager.currentPage = pageNumber;
+            PagingManager.drawPageNumber(pageNumber);
+        },
+        decodeHtml: function htmlDecode(value) {
+                return $("<div/>").html(value).text();
+        },
+        toggleEnableForward: function () {			
+		
+			if(PagingManager.pagingForward){
+				$('a.firstPagedAnchor').css('color','orange');
+				$('a.firstPagedAnchor').css('font-weight','bold');
+			}
+            var enabled = true;
+            if (parseInt(PagingManager.products.length / PagingManager.productsPerPage) < PagingManager.pagesToShow) {
+                enabled = false;
+            }
+            if (PagingManager.products.length == 0) {
+                enabled = false;
+            }
+            if (enabled)
+                $('a.forwardFetch').css('display', 'inline');
+            else $('a.forwardFetch').css('display', 'none');
+			
+
+        },
+        toggleEnableBackward: function () {
+
+            var enabled = true;
+            if (PagingManager.viewStartPage == 1) {
+                enabled = false;
+            }
+            if (enabled)
+                $('a.backwardFetch').css('display', 'inline');
+            else $('a.backwardFetch').css('display', 'none');
+
+        }
+    };
+
+    $(document).ready(function () {
+        PagingManager.setRequestUrl('@Url.Content("~/Home/GetPagedProducts")');
+        PagingManager.initialize();
+    });
+</script>
