@@ -33,6 +33,19 @@
         currentPage: 1,
         productsPerPage: 2,
         pagesToShow: 3,
+		isDoubleClicked:function (element) {
+			//if already clicked return TRUE to indicate this click is not allowed
+			if (element.data("isclicked")) return true;
+
+			//mark as clicked for 1 second
+			element.data("isclicked", true);
+			setTimeout(function () {
+				element.removeData("isclicked");
+			}, 1000);
+
+			//return FALSE to indicate this click was allowed
+			return false;
+		},
         numberOfPages: function() {
             return PagingManager.products.length % PagingManager.productsPerPage == 0 ? PagingManager.products.length / PagingManager.productsPerPage : parseInt(PagingManager.products.length / PagingManager.productsPerPage + 1);
         },
@@ -134,7 +147,7 @@
             backwardFetch.text = '<<';
             $(backwardFetch).attr('href', '#');
             $(backwardFetch).click(function (event) { 
-				event.preventDefault();
+				if (PagingManager.isDoubleClicked($(this))) return;
 				PagingManager.pagingForward = false;
                 PagingManager.moveBackNextResultSet();
             });
@@ -179,7 +192,7 @@
             $(forwardFetch).attr('href', '#');
             $(forwardFetch).attr('class', 'forwardFetch');
             $(forwardFetch).click(function(event) {
-				event.preventDefault();
+				if (PagingManager.isDoubleClicked($(this))) return;
 				PagingManager.pagingBackward = true;
 				PagingManager.pagingForward = true;
                 PagingManager.moveToNextResultSet();
