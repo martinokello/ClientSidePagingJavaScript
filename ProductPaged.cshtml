@@ -133,7 +133,8 @@
             let backwardFetch = document.createElement('a');
             backwardFetch.text = '<<';
             $(backwardFetch).attr('href', '#');
-            $(backwardFetch).click(function () {
+            $(backwardFetch).click(function (event) { 
+				event.preventDefault();
 				PagingManager.pagingForward = false;
                 PagingManager.moveBackNextResultSet();
             });
@@ -177,7 +178,8 @@
             forwardFetch.text = '>>';
             $(forwardFetch).attr('href', '#');
             $(forwardFetch).attr('class', 'forwardFetch');
-            $(forwardFetch).click(function() {
+            $(forwardFetch).click(function(event) {
+				event.preventDefault();
 				PagingManager.pagingBackward = true;
 				PagingManager.pagingForward = true;
                 PagingManager.moveToNextResultSet();
