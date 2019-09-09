@@ -1,9 +1,8 @@
-﻿
+
 @{
     ViewBag.Title = "Paged Products Client Side";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
-
 <h2>Paged Products</h2>
 
 <div class="container-fluid">
@@ -26,7 +25,9 @@
 <script type="text/javascript">
 
     var PagingManager = {
+		rootMainSite: '@String.Format("{0}://{1}{2}",Request.Url.Scheme, Request.Url.Authority,Url.Content("~/"))',
 		pagingForward:true,
+		pagingBackward:false,
         requestUrl: null,
         products: [],
         currentPage: 1,
@@ -102,7 +103,10 @@
                 
                 let prodIdDivName = document.createElement('div');
                 $(prodIdDivName).attr('class', 'col-lg-3');
-                $(prodIdDivName).html(PagingManager.products[startIndex].prodName);
+				let productLink = document.createElement('a');
+				$(productLink).attr('href',PagingManager.rootMainSite+"Home/Product?prodId="+PagingManager.products[startIndex].prodCode);
+				$(productLink).html(PagingManager.products[startIndex].prodName);
+                $(prodIdDivName).append(productLink);
                 $(row).append(prodIdDivName);
                 
                 let prodIdDivDescription = document.createElement('div');
@@ -128,17 +132,24 @@
 
             let backwardFetch = document.createElement('a');
             backwardFetch.text = '<<';
-            $(backwardFetch).attr('class', 'backwardFetch');
+            $(backwardFetch).attr('href', '#');
             $(backwardFetch).click(function () {
 				PagingManager.pagingForward = false;
                 PagingManager.moveBackNextResultSet();
             });
-            $('span.page-span').append(backwardFetch);
+			if(PagingManager.currentPage <= PagingManager.pagesToShow){
+				PagingManager.pagingBackward = false;
+			}
+			if(PagingManager.pagingBackward)
+            {
+				$('span.page-span').append(backwardFetch);
+			}
 
             if (PagingManager.products.length > 0) {
                 for (let n = PagingManager.viewStartPage, pages = 1; PagingManager.products.length % PagingManager.productsPerPage == 0 ? pages <= PagingManager.products.length / PagingManager.productsPerPage : pages <= PagingManager.products.length / PagingManager.productsPerPage + 1; n++ , pages++) {
                     let a = document.createElement('a');
                     a.text = n;
+					$(a).attr('href','#');
 					$('span.page-span > a').css('color','teal');
 					$('span.page-span > a').css('font-weight','normal');
 					if(n == PagingManager.viewStartPage){
@@ -164,8 +175,10 @@
             }
             let forwardFetch = document.createElement('a');
             forwardFetch.text = '>>';
+            $(forwardFetch).attr('href', '#');
             $(forwardFetch).attr('class', 'forwardFetch');
             $(forwardFetch).click(function() {
+				PagingManager.pagingBackward = true;
 				PagingManager.pagingForward = true;
                 PagingManager.moveToNextResultSet();
             });
